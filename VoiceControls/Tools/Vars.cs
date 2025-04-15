@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using BepInEx.Logging;
+using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Windows.Speech;
@@ -10,6 +12,23 @@ namespace VoiceControls.Tools
 {
     public static class Vars
     {
+        private static ManualLogSource MlS;
+        public static void SetUpLogger(ManualLogSource MLS)
+        {
+            if (MLS != null) return;
+            MlS = MLS;
+        }
+        public static void Log(string message)
+        {
+            if (MlS != null)
+            {
+                MlS.Log(message);
+            }
+            else
+            {
+                Debug.Log($"[{BepinexEntry.Name}] {message}");
+            }
+        }
         public static GameObject Manager;
         public static List<CommandInfo> SpotifyCommands = new List<CommandInfo>();
 
@@ -22,6 +41,8 @@ namespace VoiceControls.Tools
 
         public static Action<bool> StarterRecognised;
         public static Action CommandEnded;
+
+        public static List<Player> FriendsInRoom = new List<Player>();
 
         internal enum SpotifyKeyCodes : uint
         {
@@ -37,7 +58,8 @@ namespace VoiceControls.Tools
         {
             Spotify,
             Regular,
-            PlayerColor
+            PlayerColor,
+            CustomHexColor
         }
 
         public GameObject MicrophoneObject;
@@ -65,6 +87,9 @@ namespace VoiceControls.Tools
         public AudioClip MicrophoneOff;
 
         public bool UsePlayersColorForMicrophoneDot;
+        public bool UseCustomColor;
+
+        public Color HexColor;
 
         public SpeakingType UserSpeakingType;
     }

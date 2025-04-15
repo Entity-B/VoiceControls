@@ -42,6 +42,5 @@ namespace VoiceControls.Components
         public override void OnPlayerEnteredRoom(Player newPlayer) => PlayerJoined?.Invoke(newPlayer);
         public override void OnPlayerLeftRoom(Player otherPlayer) => PlayerLeft?.Invoke(otherPlayer);
         public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps) => PlayerPropsUpdate?.Invoke(targetPlayer, changedProps);
-
     }
 }

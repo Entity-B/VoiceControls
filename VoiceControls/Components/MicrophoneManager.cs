@@ -27,7 +27,7 @@ namespace VoiceControl.Managers
             {
                 Vars.SM.SpeakingDotObject.SetActive(true);
                 Vars.SM.UserSpeakingType = IsSpotify ? SpeakingMicrophone.SpeakingType.Spotify : SpeakingMicrophone.SpeakingType.Regular;
-                Vars.SM.SpeakingDotColor = Vars.SM.UsePlayersColorForMicrophoneDot ? (Vars.SM.UserSpeakingType == SpeakingMicrophone.SpeakingType.Regular ? VariableTools.NineRGBTo255RGB(GorillaTagger.Instance.offlineVRRig.playerColor) : Color.green) : Color.cyan;
+                Vars.SM.SpeakingDotColor = Vars.SM.UsePlayersColorForMicrophoneDot ? (Vars.SM.UserSpeakingType == SpeakingMicrophone.SpeakingType.Regular ? VariableTools.NineRGBTo255RGB(GorillaTagger.Instance.offlineVRRig.playerColor) : Color.green) : (Vars.SM.UseCustomColor ? Vars.SM.HexColor : Color.cyan);
 
                 AudioSource.PlayClipAtPoint(Vars.SM.MicrophoneOn, GorillaTagger.Instance.offlineVRRig.headMesh.transform.position, 99f);
             };

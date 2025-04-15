@@ -32,6 +32,12 @@ namespace VoiceControls.Main
             Harmony harm = new Harmony(BepinexEntry.GUID);
             harm.PatchAll();
 
+            ConfigFile Config = new ConfigFile(Path.Combine(Directory.GetCurrentDirectory(), @"BepInEx\config\HeadVolume.cfg"), true);
+            ConfigEntry<bool> UsePlayerColorEntry = Config.Bind("Microphone Color Settings", "Microphone Dot Uses Player Color", false, "If this is enabled, the dot that is next to the microphone that is used for finding out if you are using the speech recognition, if it isnt spotify mode, will be your ingame player color ( overrides Microphone Dot Uses Hex Color )");
+            ConfigEntry<bool> UseHexadecimalColor = Config.Bind("Microphone Color Settings", "Microphone Dot Uses Hex Color", false, "If this is enabled, the dot that is next to the microphone that is used for finding out if you are using the speech recognition, if it isnt spotify mode, will be the hex color you choose");
+            ConfigEntry<string> HexColor = Config.Bind("Microphone Color Settings", "Microphone Dot Uses Hex Color", "#33bbff", "The color the Speaking Dot will be if (Microphone Dot Uses Hex Color) Is Enabled and (Microphone Dot Uses Player Color) is Disabled, This must be a hexadecimal color, Heres a link if needed: https://htmlcolorcodes.com/");
+
+            Vars.SetUpLogger(this.Logger);
             GorillaTagger.OnPlayerSpawned(delegate
             {
                 Vars.Manager = new GameObject("VoiceControlsManager");
@@ -72,6 +78,7 @@ namespace VoiceControls.Main
                 {
                     AssetBundle assetBundle = AssetBundle.LoadFromStream(manifestResourceStream);
                     GameObject ConsoleCanvasObject = UnityEngine.Object.Instantiate<GameObject>(assetBundle.LoadAsset<GameObject>("Icon"));
+                    ColorUtility.TryParseHtmlString(HexColor.Value.StartsWith('#') ? HexColor.Value : $"#{HexColor.Value}", out Color color);
                     Vars.SM = new SpeakingMicrophone()
                     {
                         Muted = assetBundle.LoadAsset<Texture>("muted"),
@@ -85,15 +92,15 @@ namespace VoiceControls.Main
                         MicrophoneObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(0).gameObject,
                         SpeakingDotObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(1).gameObject,
 
-                        UsePlayersColorForMicrophoneDot = false,
-                        UserSpeakingType = Vars.SM.UsePlayersColorForMicrophoneDot ? SpeakingMicrophone.SpeakingType.PlayerColor : SpeakingMicrophone.SpeakingType.Regular
+                        UsePlayersColorForMicrophoneDot = UsePlayerColorEntry.Value,
+                        UseCustomColor = UseHexadecimalColor.Value,
+                        HexColor = color,
+                       
+                        UserSpeakingType = Vars.SM.UsePlayersColorForMicrophoneDot ? SpeakingMicrophone.SpeakingType.PlayerColor : ( Vars.SM.UseCustomColor ? SpeakingMicrophone.SpeakingType.CustomHexColor : SpeakingMicrophone.SpeakingType.Regular)
                     };
                 }
-
-
-                ConfigFile Config = new ConfigFile(Path.Combine(Directory.GetCurrentDirectory(), @"BepInEx\config\HeadVolume.cfg"), true);
-                ConfigEntry<bool> IntEntry = Config.Bind("Microphone Settings", "Microphone Dot Uses Player Color", false, "If this is enabled, the dot that is next to the microphone that is used for finding out if you are using the speech recognition, if it isnt spotify mode, will be your ingame player color");
-                Vars.SM.UsePlayersColorForMicrophoneDot = IntEntry.Value;
+                Vars.Log("Created SPeakingMicorphone and Effects");
+                Vars.Log($"Config Settings: Use Player Color: {UsePlayerColorEntry.Value}, Use Custom Color: {UseHexadecimalColor.Value}, Custom Color Hexadecimal: {HexColor.Value}, Custom Color RGB: R({Vars.SM.HexColor.r}) G({Vars.SM.HexColor.g}) B({Vars.SM.HexColor.b})");
             });
         }
         void Update()
