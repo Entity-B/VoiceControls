@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using ExitGames.Client.Photon;
 using Photon.Pun;
@@ -21,6 +22,18 @@ namespace VoiceControls.Components
         public static Action<Player> FriendJoined;
         public static Action<Player> FriendLeft;
 
+        // Awake
+        void Awake()
+        {
+            PlayerJoined += delegate (Player Person)
+            {
+                if (FriendBackendController.Instance.FriendsList.FirstOrDefault(f => f.Presence.FriendLinkId == Person.UserId) != null) FriendJoined?.Invoke(Person);
+            };
+            PlayerLeft += delegate (Player Person)
+            {
+                if (FriendBackendController.Instance.FriendsList.FirstOrDefault(f => f.Presence.FriendLinkId == Person.UserId) != null) FriendLeft?.Invoke(Person);
+            };
+        }
         // Room Stuff
         public override void OnJoinedRoom() => RoomJoin?.Invoke();
         public override void OnLeftRoom() => RoomLeave?.Invoke();

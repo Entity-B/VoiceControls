@@ -5,6 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\microphone" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\microphone" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>$(BepInExAssemblyPath)\0Harmony.dll</HintPath>
     </Reference>
@@ -288,6 +296,5 @@
 
   <ItemGroup>
     <Folder Include="Patches\" />
-    <Folder Include="Resources\" />
   </ItemGroup>
 </Project>

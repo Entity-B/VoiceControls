@@ -1,21 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Windows.Speech;
 using VoiceControls.Components;
+using VoiceControls.Tools;
 
 namespace VoiceControls.Main
 {
     [BepInPlugin(BepinexEntry.GUID, BepinexEntry.Name, BepinexEntry.Version)]
     public class Entry : BaseUnityPlugin
     {
-        bool inRoom;
-
         public static Entry Instance { get; private set; }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
@@ -29,6 +31,7 @@ namespace VoiceControls.Main
             Instance = this;
             Harmony harm = new Harmony(BepinexEntry.GUID);
             harm.PatchAll();
+
             GorillaTagger.OnPlayerSpawned(delegate
             {
                 Vars.Manager = new GameObject("VoiceControlsManager");
@@ -41,6 +44,7 @@ namespace VoiceControls.Main
 
                 Vars.Spotify.OnPhraseRecognized += delegate
                 {
+                    Vars.StarterRecognised?.Invoke(true);
                     Vars.Spotify.Stop();
                     Vars.SpotifyCommand.Start();
                 };
@@ -60,9 +64,36 @@ namespace VoiceControls.Main
                     {
                         Logger.LogError(ex);
                     }
+                    Vars.CommandEnded?.Invoke();
                     Vars.Spotify.Start();
                     Vars.SpotifyCommand.Stop();
                 };
+                using (Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("VoiceControls.Resources.microphonestuff"))
+                {
+                    AssetBundle assetBundle = AssetBundle.LoadFromStream(manifestResourceStream);
+                    GameObject ConsoleCanvasObject = UnityEngine.Object.Instantiate<GameObject>(assetBundle.LoadAsset<GameObject>("Icon"));
+                    Vars.SM = new SpeakingMicrophone()
+                    {
+                        Muted = assetBundle.LoadAsset<Texture>("muted"),
+                        Default = assetBundle.LoadAsset<Texture>("regular"),
+                        LoudnessLevel1 = assetBundle.LoadAsset<Texture>("LevelOne"),
+                        LoudnessLevel2 = assetBundle.LoadAsset<Texture>("LevelTwo"),
+
+                        MicrophoneOn = assetBundle.LoadAsset<AudioClip>("power-on"),
+                        MicrophoneOff = assetBundle.LoadAsset<AudioClip>("power-off"),
+
+                        MicrophoneObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(0).gameObject,
+                        SpeakingDotObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(1).gameObject,
+
+                        UsePlayersColorForMicrophoneDot = false,
+                        UserSpeakingType = Vars.SM.UsePlayersColorForMicrophoneDot ? SpeakingMicrophone.SpeakingType.PlayerColor : SpeakingMicrophone.SpeakingType.Regular
+                    };
+                }
+
+
+                ConfigFile Config = new ConfigFile(Path.Combine(Directory.GetCurrentDirectory(), @"BepInEx\config\HeadVolume.cfg"), true);
+                ConfigEntry<bool> IntEntry = Config.Bind("Microphone Settings", "Microphone Dot Uses Player Color", false, "If this is enabled, the dot that is next to the microphone that is used for finding out if you are using the speech recognition, if it isnt spotify mode, will be your ingame player color");
+                Vars.SM.UsePlayersColorForMicrophoneDot = IntEntry.Value;
             });
         }
         void Update()
