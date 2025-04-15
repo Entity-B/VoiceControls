@@ -20,6 +20,7 @@ namespace VoiceControls.Tools
         }
         public static void Log(string message)
         {
+#if DEBUG
             if (MlS != null)
             {
                 MlS.Log(message);
@@ -28,6 +29,7 @@ namespace VoiceControls.Tools
             {
                 Debug.Log($"[{BepinexEntry.Name}] {message}");
             }
+#endif
         }
         public static GameObject Manager;
         public static List<CommandInfo> SpotifyCommands = new List<CommandInfo>();
