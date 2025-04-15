@@ -287,6 +287,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Patches\" />
     <Folder Include="Resources\" />
   </ItemGroup>
 </Project>
