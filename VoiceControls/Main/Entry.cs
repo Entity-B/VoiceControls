@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using BepInEx;
 using HarmonyLib;
 using UnityEngine;
@@ -16,6 +17,13 @@ namespace VoiceControls.Main
         bool inRoom;
 
         public static Entry Instance { get; private set; }
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+        internal static extern void keybd_event(uint bVk, uint bScan, uint dwFlags, uint dwExtraInfo);
+
+        // I may have borrowed this from graze, so full credits to them :)
+        internal static void SendKey(Vars.SpotifyKeyCodes virtualKeyCode) => keybd_event((uint)virtualKeyCode, 0, 0, 0);
+
         void Start()
         {
             Instance = this;
@@ -63,28 +71,23 @@ namespace VoiceControls.Main
         }
         void CommandsSetup()
         {
-            Vars.SpotifyCommands.Add(new CommandInfo() {
-                CommandActivationWord = "stop",
-                CommandDescription = "Stops you're currently played spotify song",
-                CommandAction = () => { }
-            });
             Vars.SpotifyCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "play",
-                CommandDescription = "Plays you're currently spotify song",
-                CommandAction = () => { }
+                CommandDescription = "Plays/Pauses you're currently spotify song",
+                CommandAction = () => { SendKey(Vars.SpotifyKeyCodes.PlayOrPause); }
             });
             Vars.SpotifyCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "next",
                 CommandDescription = "Plays the next song in Queue",
-                CommandAction = () => { }
+                CommandAction = () => { SendKey(Vars.SpotifyKeyCodes.Next); }
             });
             Vars.SpotifyCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "last",
                 CommandDescription = "The song that was playing last",
-                CommandAction = () => { }
+                CommandAction = () => { SendKey(Vars.SpotifyKeyCodes.Previous);  }
             });
         }
     }

@@ -13,5 +13,12 @@ namespace VoiceControls.Main
 
         public static KeywordRecognizer Spotify;
         public static KeywordRecognizer SpotifyCommand;
+
+        internal enum SpotifyKeyCodes : uint
+        {
+            Next = 0xB0,
+            Previous = 0xB1,
+            PlayOrPause = 0xB3,
+        }
     }
 }
