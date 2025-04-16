@@ -37,6 +37,11 @@ namespace VoiceControls.Tools
         public static KeywordRecognizer Spotify;
         public static KeywordRecognizer SpotifyCommand;
 
+        public static KeywordRecognizer Default;
+        public static KeywordRecognizer DefaultCommand;
+
+        public static List<CommandInfo> DefaultCommands = new List<CommandInfo>();
+
         public static SpeakingMicrophone SM;
 
         public static Effects ModuleEffects;
@@ -44,8 +49,10 @@ namespace VoiceControls.Tools
         public static Action<bool> StarterRecognised;
         public static Action CommandEnded;
 
-        public static List<Player> FriendsInRoom = new List<Player>();
+        public static Player[] FriendsInRoom;
+        public static Effects VFX;
 
+        public static VRRig CurrentVRRig(this Player value) => GorillaGameManager.instance.FindPlayerVRRig(value);
         internal enum SpotifyKeyCodes : uint
         {
             Next = 0xB0,
@@ -98,6 +105,6 @@ namespace VoiceControls.Tools
 
     public class Effects
     {
-        public AudioSource PlayerPingAudio;
+        public AudioClip PlayerPingAudio;
     }
 }

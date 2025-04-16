@@ -24,6 +24,7 @@ namespace VoiceControls.Main
         public ConfigEntry<bool> UsePlayerColorEntry;
         public ConfigEntry<bool> UseHexadecimalColor;
         public ConfigEntry<string> HexColor;
+        public ConfigEntry<string> VoiceActivationWord;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
         internal static extern void keybd_event(uint bVk, uint bScan, uint dwFlags, uint dwExtraInfo);
@@ -37,105 +38,115 @@ namespace VoiceControls.Main
             Harmony harm = new Harmony(BepinexEntry.GUID);
             harm.PatchAll();
 
-            ConfigFile Config = new ConfigFile(Path.Combine(Directory.GetCurrentDirectory(), @"BepInEx\VoiceControls\SpeechRecognition.cfg"), true);
-            UsePlayerColorEntry = Config.Bind("Microphone Color Settings", "Microphone Dot Uses Player Color", false, "If this is enabled, the dot that is next to the microphone that is used for finding out if you are using the speech recognition, if it isnt spotify mode, will be your ingame player color ( overrides Microphone Dot Uses Hex Color )");
-            UseHexadecimalColor = Config.Bind("Microphone Color Settings", "Microphone Dot Uses Hex Color", false, "If this is enabled, the dot that is next to the microphone that is used for finding out if you are using the speech recognition, if it isnt spotify mode, will be the hex color you choose");
-            HexColor = Config.Bind("Microphone Color Settings", "Microphone Dot Hex Color", "#33bbff", "The color the Speaking Dot will be if (Microphone Dot Uses Hex Color) Is Enabled and (Microphone Dot Uses Player Color) is Disabled. This must be a hexadecimal color");
+            CreateConfigEntries();
 
             Vars.SetUpLogger(base.Logger);
             GorillaTagger.OnPlayerSpawned(delegate
             {
-                try
+                Vars.Manager = new GameObject("VoiceControlsManager");
+                Vars.Manager.AddComponent<Callbacks>();
+                DontDestroyOnLoad(Vars.Manager);
+
+                CommandsSetup();
+                Vars.Spotify = new KeywordRecognizer(new string[] { "MUSIC" });
+                Vars.SpotifyCommand = new KeywordRecognizer(Vars.SpotifyCommands.Select(c => c.CommandActivationWord).ToArray());
+
+                Vars.Default = new KeywordRecognizer(new string[] { VoiceActivationWord.Value.ToUpper() });
+                Vars.DefaultCommand = new KeywordRecognizer(Vars.DefaultCommands.Select(c => c.CommandActivationWord).ToArray());
+
+
+                Vars.Spotify.OnPhraseRecognized += delegate
                 {
-                    Vars.Manager = new GameObject("VoiceControlsManager");
-                    Vars.Manager.AddComponent<Callbacks>();
-                    DontDestroyOnLoad(Vars.Manager);
+                    Vars.StarterRecognised?.Invoke(true);
+                    Vars.Spotify.Stop();
+                    Vars.SpotifyCommand.Start();
+                };
 
-                    CommandsSetup();
-                    Vars.Spotify = new KeywordRecognizer(new string[] { "SONGS" });
-                }
-                catch
+                Vars.SpotifyCommand.OnPhraseRecognized += delegate (PhraseRecognizedEventArgs speech)
                 {
-                    Debug.Log("Cheese");
-                }
-
-                try
-                {
-                    Vars.SpotifyCommand = new KeywordRecognizer(Vars.SpotifyCommands.Select(c => c.CommandActivationWord).ToArray());
-
-
-                    Vars.Spotify.OnPhraseRecognized += delegate
+                    try
                     {
-                        Vars.StarterRecognised?.Invoke(true);
-                        Vars.Spotify.Stop();
-                        Vars.SpotifyCommand.Start();
-                    };
-
-                    Vars.SpotifyCommand.OnPhraseRecognized += delegate (PhraseRecognizedEventArgs speech)
-                    {
-                        try
+                        CommandInfo command = Vars.SpotifyCommands.FirstOrDefault(c => c.CommandActivationWord.ToLower() == speech.text.ToLower());
+                        if (command != null)
                         {
-                            CommandInfo command = Vars.SpotifyCommands.FirstOrDefault(c => c.CommandActivationWord.ToLower() == speech.text.ToLower());
-                            if (command != null)
-                            {
-                                Logger.Log($"Command: {command.CommandActivationWord}, Description: {command.CommandDescription}");
-                                command.CommandAction.Invoke();
-                            }
+                            Logger.Log($"Command: {command.CommandActivationWord}, Description: {command.CommandDescription}");
+                            command.CommandAction.Invoke();
                         }
-                        catch (Exception ex)
-                        {
-                            Logger.LogError(ex);
-                        }
-                        Vars.CommandEnded?.Invoke();
-                        Vars.Spotify.Start();
-                        Vars.SpotifyCommand.Stop();
-                    };
-                }
-                catch
-                {
-                    Debug.Log("learn to code dumbass");
-                }
-                try
-                {
-                    using (Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("VoiceControls.Resources.microphone"))
-                    {
-                        AssetBundle assetBundle = AssetBundle.LoadFromStream(manifestResourceStream);
-                        GameObject ConsoleCanvasObject = UnityEngine.Object.Instantiate<GameObject>(assetBundle.LoadAsset<GameObject>("Icon"));
-                        ConsoleCanvasObject.AddComponent<MicrophoneManager>();
-                        ColorUtility.TryParseHtmlString(HexColor.Value.StartsWith('#') ? HexColor.Value : $"#{HexColor.Value}", out Color color);
-                        Vars.SM = new SpeakingMicrophone()
-                        {
-                            Muted = assetBundle.LoadAsset<Texture>("muted"),
-                            Default = assetBundle.LoadAsset<Texture>("regular"),
-                            LoudnessLevel1 = assetBundle.LoadAsset<Texture>("LevelOne"),
-                            LoudnessLevel2 = assetBundle.LoadAsset<Texture>("LevelTwo"),
-
-                            MicrophoneOn = assetBundle.LoadAsset<AudioClip>("power-on"),
-                            MicrophoneOff = assetBundle.LoadAsset<AudioClip>("power-off"),
-
-                            MicrophoneObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(0).gameObject,
-                            SpeakingDotObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(1).gameObject,
-
-                            UsePlayersColorForMicrophoneDot = UsePlayerColorEntry.Value,
-                            UseCustomColor = UseHexadecimalColor.Value,
-                            HexColor = color,
-
-                            UserSpeakingType = SpeakingMicrophone.SpeakingType.Regular
-                        };
-                        Vars.SM.UserSpeakingType = Vars.SM.UsePlayersColorForMicrophoneDot ? SpeakingMicrophone.SpeakingType.PlayerColor : (Vars.SM.UseCustomColor ? SpeakingMicrophone.SpeakingType.CustomHexColor : SpeakingMicrophone.SpeakingType.Regular);
-                        Vars.SM.SpeakingDotObject.SetActive(false);
                     }
-                }
-                catch
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex);
+                    }
+                    Vars.CommandEnded?.Invoke();
+                    Vars.Spotify.Start();
+                    Vars.SpotifyCommand.Stop();
+                };
+
+                Vars.Default.OnPhraseRecognized += delegate
                 {
-                    Debug.Log("era");
+                    Vars.StarterRecognised?.Invoke(false);
+                    Vars.Default.Stop();
+                    Vars.DefaultCommand.Start();
+                };
+                Vars.DefaultCommand.OnPhraseRecognized += delegate (PhraseRecognizedEventArgs speech)
+                {
+                    try
+                    {
+                        CommandInfo command = Vars.SpotifyCommands.FirstOrDefault(c => c.CommandActivationWord.ToLower() == speech.text.ToLower());
+                        if (command != null)
+                        {
+                            Logger.Log($"Command: {command.CommandActivationWord}, Description: {command.CommandDescription}");
+                            command.CommandAction.Invoke();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex);
+                    }
+                    Vars.CommandEnded?.Invoke();
+                    Vars.Default.Start();
+                    Vars.DefaultCommand.Stop();
+                };
+                using (Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("VoiceControls.Resources.microphone"))
+                {
+                    AssetBundle assetBundle = AssetBundle.LoadFromStream(manifestResourceStream);
+                    GameObject ConsoleCanvasObject = UnityEngine.Object.Instantiate<GameObject>(assetBundle.LoadAsset<GameObject>("Icon"));
+                    ConsoleCanvasObject.AddComponent<MicrophoneManager>();
+                    ColorUtility.TryParseHtmlString(HexColor.Value.StartsWith('#') ? HexColor.Value : $"#{HexColor.Value}", out Color color);
+                    Vars.SM = new SpeakingMicrophone()
+                    {
+                        Muted = assetBundle.LoadAsset<Texture>("muted"),
+                        Default = assetBundle.LoadAsset<Texture>("regular"),
+                        LoudnessLevel1 = assetBundle.LoadAsset<Texture>("LevelOne"),
+                        LoudnessLevel2 = assetBundle.LoadAsset<Texture>("LevelTwo"),
+
+                        MicrophoneOn = assetBundle.LoadAsset<AudioClip>("power-on"),
+                        MicrophoneOff = assetBundle.LoadAsset<AudioClip>("power-off"),
+
+                        MicrophoneObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(0).gameObject,
+                        SpeakingDotObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(1).gameObject,
+
+                        UsePlayersColorForMicrophoneDot = UsePlayerColorEntry.Value,
+                        UseCustomColor = UseHexadecimalColor.Value,
+                        HexColor = color,
+
+                        UserSpeakingType = SpeakingMicrophone.SpeakingType.Regular
+                    };
+                    Vars.SM.UserSpeakingType = Vars.SM.UsePlayersColorForMicrophoneDot ? SpeakingMicrophone.SpeakingType.PlayerColor : (Vars.SM.UseCustomColor ? SpeakingMicrophone.SpeakingType.CustomHexColor : SpeakingMicrophone.SpeakingType.Regular);
+                    Vars.SM.SpeakingDotObject.SetActive(false);
                 }
 
-                string Commands = string.Empty;
+                string Commands = "### Spotify Commands\n";
                 foreach (CommandInfo info in Vars.SpotifyCommands)
                 {
-                    Commands += $"[SPOTIFY] Name: {info.CommandActivationWord}, Description: {info.CommandDescription}\n";
+                    Commands += $"[MUSIC] Name: {info.CommandActivationWord}, Description: {info.CommandDescription}\n";
                 }
+                Commands += "\n### Default Commands\n";
+                foreach (CommandInfo info in Vars.DefaultCommands)
+                {
+                    Commands += $"[{VoiceActivationWord.Value}] Name: {info.CommandActivationWord}, Description: {info.CommandDescription}\n";
+                }
+                
                 File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), @"BepInEx\VoiceControls\Commands.txt"), Commands);
                 Vars.Log("Created SpeakingMicrophone and Effects");
                 Vars.Log($"Config Settings: Use Player Color: {UsePlayerColorEntry.Value}, Use Custom Color: {UseHexadecimalColor.Value}, Custom Color Hexadecimal, Custom Color RGB: R({Vars.SM.HexColor.r}) G({Vars.SM.HexColor.g}) B({Vars.SM.HexColor.b})");
@@ -165,6 +176,24 @@ namespace VoiceControls.Main
                 CommandDescription = "The song that was playing last",
                 CommandAction = () => { SendKey(Vars.SpotifyKeyCodes.Previous);  }
             });
+
+            Vars.DefaultCommands.Add(new CommandInfo()
+            {
+                CommandActivationWord = "ping",
+                CommandDescription = "pinging system for your GT Friends",
+                CommandAction = () => { StartCoroutine(Modules.PingPlayers(true)); }
+            });
+        }
+        // I made this to organise stuff
+        void CreateConfigEntries()
+        {
+            ConfigFile Config = new ConfigFile(Path.Combine(Directory.GetCurrentDirectory(), @"BepInEx\VoiceControls\SpeechRecognition.cfg"), true);
+            UsePlayerColorEntry = Config.Bind("Microphone Color Settings", "Microphone Dot Uses Player Color", false, "If this is enabled, the dot that is next to the microphone that is used for finding out if you are using the speech recognition, if it isnt spotify mode, will be your ingame player color ( overrides Microphone Dot Uses Hex Color )");
+            UseHexadecimalColor = Config.Bind("Microphone Color Settings", "Microphone Dot Uses Hex Color", false, "If this is enabled, the dot that is next to the microphone that is used for finding out if you are using the speech recognition, if it isnt spotify mode, will be the hex color you choose");
+            HexColor = Config.Bind("Microphone Color Settings", "Microphone Dot Hex Color", "#33bbff", "The color the Speaking Dot will be if (Microphone Dot Uses Hex Color) Is Enabled and (Microphone Dot Uses Player Color) is Disabled. This must be a hexadecimal color");
+            VoiceActivationWord = Config.Bind("Default Voice Activiation", "Activiation Word", "JARVIS", "So basically this is the first word you will say before a command, so [word] [command]");
+
+            ConfigEntry<bool> UseColorOnMicrophone = Config.Bind("Microphone Color Settings", "Use Color On Microphone", false, "This makes it so the color of the microphone will either be the color of the player, or the custom color of your choice");
         }
     }
     internal class BepinexEntry
