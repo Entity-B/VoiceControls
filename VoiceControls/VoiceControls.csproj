@@ -10,10 +10,12 @@
 
   <ItemGroup>
     <None Remove="Resources\microphone" />
+    <None Remove="Resources\speechrecognitioneffects" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\microphone" />
+    <EmbeddedResource Include="Resources\speechrecognitioneffects" />
   </ItemGroup>
 
   <ItemGroup>

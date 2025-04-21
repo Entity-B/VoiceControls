@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using BepInEx.Logging;
 using Photon.Realtime;
 using UnityEngine;
@@ -50,7 +51,14 @@ namespace VoiceControls.Tools
         public static Action CommandEnded;
 
         public static Player[] FriendsInRoom;
-        public static Effects VFX;
+
+        public static ModuleSettings MS;
+
+        public static string ExtractCodeFromText(string text)
+        {
+            var match = Regex.Match(text, @"(?:code is|code)?\s*(\w+)", RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value : null;
+        }
 
         public static VRRig CurrentVRRig(this Player value) => GorillaGameManager.instance.FindPlayerVRRig(value);
         internal enum SpotifyKeyCodes : uint

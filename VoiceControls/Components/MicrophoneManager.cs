@@ -5,7 +5,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.XR;
-using VoiceControl;
 using VoiceControls.Tools;
 
 namespace VoiceControl.Managers
@@ -22,20 +21,6 @@ namespace VoiceControl.Managers
             transform.SetParent(GorillaTagger.Instance.mainCamera.transform, false);
             transform.localPosition = new Vector3(-0.069f, -0.0485f, 0.0962f);
             transform.localScale = new Vector3(0.012f, 0.013f, 0.01f);
-
-            Vars.StarterRecognised += delegate (bool IsSpotify)
-            {
-                Vars.SM.SpeakingDotObject.SetActive(true);
-                Vars.SM.UserSpeakingType = IsSpotify ? SpeakingMicrophone.SpeakingType.Spotify : SpeakingMicrophone.SpeakingType.Regular;
-                Vars.SM.SpeakingDotColor = Vars.SM.UsePlayersColorForMicrophoneDot ? (Vars.SM.UserSpeakingType == SpeakingMicrophone.SpeakingType.Regular ? VariableTools.NineRGBTo255RGB(GorillaTagger.Instance.offlineVRRig.playerColor) : Color.green) : (Vars.SM.UseCustomColor ? Vars.SM.HexColor : Color.cyan);
-
-                AudioSource.PlayClipAtPoint(Vars.SM.MicrophoneOn, GorillaTagger.Instance.offlineVRRig.headMesh.transform.position, 99f);
-            };
-            Vars.CommandEnded += delegate
-            {
-                Vars.SM.SpeakingDotObject.SetActive(false);
-                AudioSource.PlayClipAtPoint(Vars.SM.MicrophoneOff, GorillaTagger.Instance.offlineVRRig.headMesh.transform.position, 99f);
-            };
         }
         void Update()
         {

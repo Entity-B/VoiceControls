@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using ExitGames.Client.Photon;
+using HarmonyLib;
 using Photon.Pun;
 using Photon.Realtime;
+using VoiceControls.Tools;
 
 namespace VoiceControls.Components
 {
@@ -33,6 +35,9 @@ namespace VoiceControls.Components
             {
                 if (FriendBackendController.Instance.FriendsList.FirstOrDefault(f => f.Presence.FriendLinkId == Person.UserId) != null) FriendLeft?.Invoke(Person);
             };
+
+            FriendJoined += delegate (Player Friend) { Vars.FriendsInRoom.Append(Friend); };
+            FriendLeft += delegate (Player Friend) { Vars.FriendsInRoom.ToList().Remove(Friend); };
         }
         // Room Stuff
         public override void OnJoinedRoom() => RoomJoin?.Invoke();

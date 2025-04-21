@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections;
 using Photon.Pun;
 using UnityEngine;
 using VoiceControls.Tools;
@@ -12,13 +9,17 @@ namespace VoiceControls.Main
     {
         public static IEnumerator PingPlayers(bool Friends)
         {
-            foreach (var Players in Friends ? Vars.FriendsInRoom : PhotonNetwork.PlayerListOthers)
+            for (int i = 0; i > Vars.MS.PingAmount; i++)
             {
-                if (Players.CurrentVRRig().currentMatIndex == GorillaTagger.Instance.offlineVRRig.currentMatIndex)
+                foreach (var Players in Friends ? Vars.FriendsInRoom : PhotonNetwork.PlayerListOthers)
                 {
-                    AudioSource.PlayClipAtPoint(Vars.VFX.PlayerPingAudio, Players.CurrentVRRig().transform.position);
-                    yield return new WaitForSeconds(1.5f);
+                    if (Players.CurrentVRRig().currentMatIndex == GorillaTagger.Instance.offlineVRRig.currentMatIndex)
+                    {
+                        AudioSource.PlayClipAtPoint(Vars.ModuleEffects.PlayerPingAudio, Players.CurrentVRRig().transform.position);
+                        yield return new WaitForSeconds(1.5f);
+                    }
                 }
+                yield return new WaitForSeconds(2f);
             }
         }
     }
