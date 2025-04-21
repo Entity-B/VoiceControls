@@ -212,19 +212,19 @@ namespace VoiceControls.Main
             {
                 CommandActivationWord = "play",
                 CommandDescription = "Plays/Pauses you're currently spotify song",
-                CommandAction = () => { SendKey(Vars.SpotifyKeyCodes.PlayOrPause); }
+                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.PlayOrPause)
             });
             Vars.SpotifyCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "next",
                 CommandDescription = "Plays the next song in Queue",
-                CommandAction = () => { SendKey(Vars.SpotifyKeyCodes.Next); }
+                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.Next)
             });
             Vars.SpotifyCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "last",
                 CommandDescription = "The song that was playing last",
-                CommandAction = () => { SendKey(Vars.SpotifyKeyCodes.Previous);  }
+                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.Previous)
             });
 
             // Default Commands
@@ -233,7 +233,14 @@ namespace VoiceControls.Main
             {
                 CommandActivationWord = "ping",
                 CommandDescription = "pinging system for your GT Friends",
-                CommandAction = () => { StartCoroutine(Modules.PingPlayers(true)); }
+                CommandAction = () => StartCoroutine(Modules.PingPlayers(true))
+            });
+
+            Vars.DefaultCommands.Add(new CommandInfo()
+            {
+                CommandActivationWord = "reload",
+                CommandDescription = "Reloads config files, incase you are to lazy to restart your game, yes Im looking at you james",
+                CommandAction = () => CreateConfigEntries()
             });
         }
         // I made this to organise stuff
