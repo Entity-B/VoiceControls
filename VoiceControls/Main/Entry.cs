@@ -52,13 +52,13 @@ namespace VoiceControls.Main
                 Vars.SpotifyCommands.Add(new CommandInfo()
                 {
                     CommandActivationWord = "stop",
-                    CommandAction = null,
+                    CommandAction = () => { Logger.Log(BepInEx.Logging.LogLevel.Info, "Stopped Listening"); },
                     CommandDescription = "stops command"
                 });
                 Vars.DefaultCommands.Add(new CommandInfo()
                 {
                     CommandActivationWord = "stop",
-                    CommandAction = null,
+                    CommandAction = () => { Logger.Log(BepInEx.Logging.LogLevel.Info, "Stopped Listening"); },
                     CommandDescription = "stops command"
                 });
                 Vars.Spotify = new KeywordRecognizer(new string[] { "MUSIC" });
