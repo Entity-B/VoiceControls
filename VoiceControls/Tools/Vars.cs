@@ -42,7 +42,7 @@ namespace VoiceControls.Tools
 
         public static KeywordRecognizer Global;
         public static KeywordRecognizer GlobalCommand;
-        public static List<string> CommandLogs;
+        public static List<string> CommandLogs = new List<string>();
 
         public static List<CommandInfo> AllCommands = new List<CommandInfo>();
 

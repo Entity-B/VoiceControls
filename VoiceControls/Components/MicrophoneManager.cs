@@ -30,14 +30,14 @@ namespace VoiceControl.Managers
             {
                 if (transform.localScale != DefaultSize + new Vector3(0.05f, 0.05f, 0.05f))
                 {
-                    transform.localScale = Vector3.Lerp(transform.localScale, DefaultSize + new Vector3(0.05f, 0.05f, 0.05f), 0.5f);
+                    transform.localScale = Vector3.Lerp(transform.localScale, DefaultSize + new Vector3(0.003f, 0.003f, 0.003f), 0.1f);
                 }
             }
             else
             {
                 if (transform.localScale != DefaultSize)
                 {
-                    transform.localScale = Vector3.Lerp(transform.localScale, DefaultSize, 0.5f);
+                    transform.localScale = Vector3.Lerp(transform.localScale, DefaultSize, 0.1f);
                 }
             }
             if (!PhotonNetwork.InRoom)
