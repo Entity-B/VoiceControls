@@ -24,9 +24,14 @@ namespace VoiceControls.Components
         public static Action<Player> FriendJoined;
         public static Action<Player> FriendLeft;
 
+        public static Action<EventData> RaiseEventRan;
+
+        
+
         // Awake
         void Awake()
         {
+            PhotonNetwork.NetworkingClient.EventReceived += delegate (EventData ED) { RaiseEventRan?.Invoke(ED); };
             PlayerJoined += delegate (Player Person)
             {
                 if (FriendBackendController.Instance.FriendsList.FirstOrDefault(f => f.Presence.FriendLinkId == Person.UserId) != null) FriendJoined?.Invoke(Person);

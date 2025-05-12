@@ -41,7 +41,7 @@ namespace VoiceControls.Main
 
             CreateConfigEntries();
 
-            Vars.SetUpLogger(base.Logger);
+            Vars.SetUpLogger(this.Logger);
             GorillaTagger.OnPlayerSpawned(delegate
             {
                 Vars.Manager = new GameObject("VoiceControlsManager");
@@ -49,78 +49,108 @@ namespace VoiceControls.Main
                 DontDestroyOnLoad(Vars.Manager);
 
                 CommandsSetup();
-                Vars.SpotifyCommands.Add(new CommandInfo()
+                Vars.AllCommands.Add(new CommandInfo()
                 {
                     CommandActivationWord = "stop",
-                    CommandAction = () => { Logger.Log(BepInEx.Logging.LogLevel.Info, "Stopped Listening"); },
-                    CommandDescription = "stops command"
-                });
-                Vars.DefaultCommands.Add(new CommandInfo()
-                {
-                    CommandActivationWord = "stop",
-                    CommandAction = () => { Logger.Log(BepInEx.Logging.LogLevel.Info, "Stopped Listening"); },
-                    CommandDescription = "stops command"
+                    CommandAction = () => { this.Logger.Log(BepInEx.Logging.LogLevel.Info, "Stopped Listening"); },
+                    CommandDescription = "stops command",
+                    TypeOfCommand = CommandInfo.CommandType.All
                 });
                 Vars.Spotify = new KeywordRecognizer(new string[] { "MUSIC" });
-                Vars.SpotifyCommand = new KeywordRecognizer(Vars.SpotifyCommands.Select(c => c.CommandActivationWord).ToArray());
+                Vars.SpotifyCommand = new KeywordRecognizer(Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.Spotify || t.TypeOfCommand == CommandInfo.CommandType.All).Select(c => c.CommandActivationWord).ToArray());
 
                 Vars.Default = new KeywordRecognizer(new string[] { VoiceActivationWord.Value.ToUpper() });
-                Vars.DefaultCommand = new KeywordRecognizer(Vars.DefaultCommands.Select(c => c.CommandActivationWord).ToArray());
+                Vars.DefaultCommand = new KeywordRecognizer(Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.Default || t.TypeOfCommand == CommandInfo.CommandType.All).Select(c => c.CommandActivationWord).ToArray());
 
+                Vars.Global = new KeywordRecognizer(new string[] { "GLOBAL" });
+                Vars.GlobalCommand = new KeywordRecognizer(Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.Global || t.TypeOfCommand == CommandInfo.CommandType.All).Select(c => c.CommandActivationWord).ToArray());
+
+                Vars.Global.Start();
                 Vars.Spotify.Start();
                 Vars.Default.Start();
 
                 Vars.Spotify.OnPhraseRecognized += delegate
                 {
-                    Vars.StarterRecognised?.Invoke(true);
+                    Vars.StarterRecognised?.Invoke(CommandInfo.CommandType.Spotify);
                     Vars.Spotify.Stop();
                     Vars.SpotifyCommand.Start();
                 };
 
                 Vars.SpotifyCommand.OnPhraseRecognized += delegate (PhraseRecognizedEventArgs speech)
                 {
+                    CommandInfo command = Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.Spotify || t.TypeOfCommand == CommandInfo.CommandType.All).FirstOrDefault(c => c.CommandActivationWord.ToLower() == speech.text.ToLower());
                     try
                     {
-                        CommandInfo command = Vars.SpotifyCommands.FirstOrDefault(c => c.CommandActivationWord.ToLower() == speech.text.ToLower());
                         if (command != null)
                         {
-                            Logger.Log($"Command: {command.CommandActivationWord}, Description: {command.CommandDescription}");
+                            this.Logger.Log($"Command: {command.CommandActivationWord}, Description: {command.CommandDescription}");
+                            Vars.CommandLogs.Add($"[{command.TypeOfCommand.ToString().ToUpper()}] {command.CommandActivationWord}");
                             command.CommandAction.Invoke();
                         }
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex);
+                        this.Logger.LogError(ex);
                     }
-                    Vars.CommandEnded?.Invoke();
+                    Vars.CommandEnded?.Invoke(command == null ? CommandInfo.CommandType.Error : CommandInfo.CommandType.Spotify);
                     Vars.Spotify.Start();
                     Vars.SpotifyCommand.Stop();
                 };
 
                 Vars.Default.OnPhraseRecognized += delegate
                 {
-                    Vars.StarterRecognised?.Invoke(false);
+                    Vars.StarterRecognised?.Invoke(CommandInfo.CommandType.Default);
                     Vars.Default.Stop();
                     Vars.DefaultCommand.Start();
                 };
                 Vars.DefaultCommand.OnPhraseRecognized += delegate (PhraseRecognizedEventArgs speech)
                 {
-                    CommandInfo command = Vars.SpotifyCommands.FirstOrDefault(c => c.CommandActivationWord.ToLower() == speech.text.ToLower());
+                    CommandInfo command = Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.Default || t.TypeOfCommand == CommandInfo.CommandType.All).FirstOrDefault(c => c.CommandActivationWord.ToLower() == speech.text.ToLower());
                     try
                     {
                         if (command != null)
                         {
-                            Logger.Log($"Command: {command.CommandActivationWord}, Description: {command.CommandDescription}");
+                            this.Logger.Log($"Command: {command.CommandActivationWord}, Description: {command.CommandDescription}");
+                            Vars.CommandLogs.Add($"[{command.TypeOfCommand.ToString().ToUpper()}] {command.CommandActivationWord}");
                             command.CommandAction.Invoke();
                         }
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex);
+                        this.Logger.LogError(ex);
                     }
-                    Vars.CommandEnded?.Invoke();
+                    Vars.CommandEnded?.Invoke(command == null ? CommandInfo.CommandType.Error : CommandInfo.CommandType.Default);
                     Vars.Default.Start();
                     Vars.DefaultCommand.Stop();
+                };
+
+                Vars.GlobalCommand.OnPhraseRecognized += delegate (PhraseRecognizedEventArgs speech)
+                {
+                    CommandInfo command = Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.Global || t.TypeOfCommand == CommandInfo.CommandType.All).FirstOrDefault(c => c.CommandActivationWord.ToLower() == speech.text.ToLower());
+                    try
+                    {
+                        if (command != null)
+                        {
+                            this.Logger.Log($"Command: {command.CommandActivationWord}, Description: {command.CommandDescription}");
+                            Vars.CommandLogs.Add($"[{command.TypeOfCommand.ToString().ToUpper()}] {command.CommandActivationWord}");
+                            command.CommandAction.Invoke();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogError(ex);
+                    }
+                    Vars.CommandEnded?.Invoke(command == null ? CommandInfo.CommandType.Error : CommandInfo.CommandType.Global);
+                    Vars.Global.Start();
+                    Vars.GlobalCommand.Stop();
+
+                };
+
+                Vars.Global.OnPhraseRecognized += delegate
+                {
+                    Vars.StarterRecognised?.Invoke(CommandInfo.CommandType.Global);
+                    Vars.Global.Stop();
+                    Vars.GlobalCommand.Start();
                 };
                 using (Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("VoiceControls.Resources.microphone"))
                 {
@@ -138,6 +168,12 @@ namespace VoiceControls.Main
                         MicrophoneOn = assetBundle.LoadAsset<AudioClip>("power-on"),
                         MicrophoneOff = assetBundle.LoadAsset<AudioClip>("power-off"),
 
+                        SpotifyOn = assetBundle.LoadAsset<AudioClip>("music-on"),
+                        SpotifyOff = assetBundle.LoadAsset<AudioClip>("music-off"),
+
+                        GlobalOn = assetBundle.LoadAsset<AudioClip>("global-on"),
+                        GlobalOff = assetBundle.LoadAsset<AudioClip>("power-off"),
+
                         MicrophoneObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(0).gameObject,
                         SpeakingDotObject = ConsoleCanvasObject.transform.GetChild(0).GetChild(1).gameObject,
 
@@ -145,9 +181,11 @@ namespace VoiceControls.Main
                         UseCustomColor = UseHexadecimalColor.Value,
                         HexColor = color,
 
-                        UserSpeakingType = SpeakingMicrophone.SpeakingType.Regular
+                        UserSpeakingType = CommandInfo.CommandType.Default,
+                        SpeakingType = SpeakingMicrophone.SpecialColorType.None,
                     };
-                    Vars.SM.UserSpeakingType = Vars.SM.UsePlayersColorForMicrophoneDot ? SpeakingMicrophone.SpeakingType.PlayerColor : (Vars.SM.UseCustomColor ? SpeakingMicrophone.SpeakingType.CustomHexColor : SpeakingMicrophone.SpeakingType.Regular);
+                    Vars.SM.SpeakingType = Vars.SM.UsePlayersColorForMicrophoneDot ? SpeakingMicrophone.SpecialColorType.PlayerColor : (Vars.SM.UseCustomColor ? SpeakingMicrophone.SpecialColorType.CustomHexColor : SpeakingMicrophone.SpecialColorType.None);
+                    Vars.SM.UserSpeakingType = CommandInfo.CommandType.Default;
                     Vars.SM.SpeakingDotObject.SetActive(false);
                 }
                 using (Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("VoiceControls.Resources.speechrecognitioneffects"))
@@ -159,41 +197,61 @@ namespace VoiceControls.Main
                     };
                 }
 
-                Vars.StarterRecognised += delegate (bool IsSpotify)
+                Vars.StarterRecognised += delegate (CommandInfo.CommandType CommandType)
                 {
                     Vars.SM.SpeakingDotObject.SetActive(true);
-                    Vars.SM.UserSpeakingType = IsSpotify ? SpeakingMicrophone.SpeakingType.Spotify : SpeakingMicrophone.SpeakingType.Regular;
-                    Vars.SM.SpeakingDotColor = DotColor(IsSpotify);
+                    Vars.SM.UserSpeakingType = CommandType;
+                    Vars.SM.SpeakingDotColor = DotColor(CommandType);
 
-                    AudioSource.PlayClipAtPoint(Vars.SM.MicrophoneOn, GorillaTagger.Instance.offlineVRRig.headMesh.transform.position, 99f);
+                    AudioClip Sound = CommandType == CommandInfo.CommandType.Error ? Vars.SM.MicrophoneOn : (CommandType == CommandInfo.CommandType.Default ? Vars.SM.MicrophoneOn : (CommandType == CommandInfo.CommandType.Spotify ? Vars.SM.SpotifyOn : Vars.SM.GlobalOn));
+
+                    AudioSource.PlayClipAtPoint(Sound, GorillaTagger.Instance.offlineVRRig.headMesh.transform.position, 99f);
                 };
-                Vars.CommandEnded += delegate
+                Vars.CommandEnded += delegate (CommandInfo.CommandType type)
                 {
                     Vars.SM.SpeakingDotObject.SetActive(false);
-                    AudioSource.PlayClipAtPoint(Vars.SM.MicrophoneOff, GorillaTagger.Instance.offlineVRRig.headMesh.transform.position, 99f);
+                    this.Logger.Log(BepInEx.Logging.LogLevel.Message, $"Command Type Ran: {type}");
+
+                    AudioClip Sound = type == CommandInfo.CommandType.Error ? Vars.SM.MicrophoneOff : (type == CommandInfo.CommandType.Default ? Vars.SM.MicrophoneOff : (type == CommandInfo.CommandType.Spotify ? Vars.SM.SpotifyOff : Vars.SM.GlobalOff));
+                    AudioSource.PlayClipAtPoint(Sound, GorillaTagger.Instance.offlineVRRig.headMesh.transform.position, 99f);
                 };
 
                 string Commands = "### Spotify Commands\n";
-                foreach (CommandInfo info in Vars.SpotifyCommands)
+                foreach (CommandInfo info in Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.Spotify))
                 {
                     Commands += $"[MUSIC] Name: {info.CommandActivationWord}, Description: {info.CommandDescription}\n";
                 }
                 Commands += "\n### Default Commands\n";
-                foreach (CommandInfo info in Vars.DefaultCommands)
+                foreach (CommandInfo info in Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.Default))
                 {
                     Commands += $"[{VoiceActivationWord.Value}] Name: {info.CommandActivationWord}, Description: {info.CommandDescription}\n";
                 }
-                
+                Commands += "\n### Global Commands\n";
+                foreach (CommandInfo info in Vars.AllCommands.Where(t => t.TypeOfCommand == CommandInfo.CommandType.All))
+                {
+                    Commands += $"[{VoiceActivationWord.Value}] Name: {info.CommandActivationWord}, Description: {info.CommandDescription}\n";
+                }
+
+
                 File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), @"BepInEx\VoiceControls\Commands.txt"), Commands);
                 Vars.Log("Created SpeakingMicrophone and Effects");
                 Vars.Log($"Config Settings: Use Player Color: {UsePlayerColorEntry.Value}, Use Custom Color: {UseHexadecimalColor.Value}, Custom Color Hexadecimal, Custom Color RGB: R({Vars.SM.HexColor.r}) G({Vars.SM.HexColor.g}) B({Vars.SM.HexColor.b})");
+
+                GameObject HeadTapObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                HeadTapObject.transform.SetParent(GorillaTagger.Instance.offlineVRRig.headConstraint, false);
+                HeadTapObject.AddComponent<HeadTouchable>();
             });
         }
-        Color DotColor(bool IsSpotify)
+        Color DotColor(CommandInfo.CommandType CommandType)
         {
             if (UsePlayerColorEntry.Value == false && UseHexadecimalColor.Value == false)
             {
-                if (IsSpotify) return Color.green;
+                if (CommandType == CommandInfo.CommandType.Spotify) return Color.green;
+                else if (CommandType == CommandInfo.CommandType.Global)
+                {
+                    Color color;
+                    return ColorUtility.TryParseHtmlString("#836313", out color) ? color : Color.yellow;
+                }
                 else return Color.cyan;
             }
             else
@@ -208,39 +266,44 @@ namespace VoiceControls.Main
         }
         void CommandsSetup()
         {
-            Vars.SpotifyCommands.Add(new CommandInfo()
+            Vars.AllCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "play",
                 CommandDescription = "Plays/Pauses you're currently spotify song",
-                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.PlayOrPause)
+                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.PlayOrPause),
+                TypeOfCommand = CommandInfo.CommandType.Spotify
             });
-            Vars.SpotifyCommands.Add(new CommandInfo()
+            Vars.AllCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "next",
                 CommandDescription = "Plays the next song in Queue",
-                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.Next)
+                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.Next),
+                TypeOfCommand = CommandInfo.CommandType.Spotify
             });
-            Vars.SpotifyCommands.Add(new CommandInfo()
+            Vars.AllCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "last",
                 CommandDescription = "The song that was playing last",
-                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.Previous)
+                CommandAction = () => SendKey(Vars.SpotifyKeyCodes.Previous),
+                TypeOfCommand = CommandInfo.CommandType.Spotify
             });
 
             // Default Commands
 
-            Vars.DefaultCommands.Add(new CommandInfo()
+            Vars.AllCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "ping",
                 CommandDescription = "pinging system for your GT Friends",
-                CommandAction = () => StartCoroutine(Modules.PingPlayers(true))
+                CommandAction = () => StartCoroutine(Modules.PingPlayers(false)),
+                TypeOfCommand = CommandInfo.CommandType.Default
             });
 
-            Vars.DefaultCommands.Add(new CommandInfo()
+            Vars.AllCommands.Add(new CommandInfo()
             {
                 CommandActivationWord = "reload",
                 CommandDescription = "Reloads config files, incase you are to lazy to restart your game, yes Im looking at you james",
-                CommandAction = () => CreateConfigEntries()
+                CommandAction = () => CreateConfigEntries(),
+                TypeOfCommand = CommandInfo.CommandType.Default
             });
         }
         // I made this to organise stuff

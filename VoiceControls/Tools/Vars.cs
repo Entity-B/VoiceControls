@@ -33,7 +33,6 @@ namespace VoiceControls.Tools
 #endif
         }
         public static GameObject Manager;
-        public static List<CommandInfo> SpotifyCommands = new List<CommandInfo>();
 
         public static KeywordRecognizer Spotify;
         public static KeywordRecognizer SpotifyCommand;
@@ -41,14 +40,18 @@ namespace VoiceControls.Tools
         public static KeywordRecognizer Default;
         public static KeywordRecognizer DefaultCommand;
 
-        public static List<CommandInfo> DefaultCommands = new List<CommandInfo>();
+        public static KeywordRecognizer Global;
+        public static KeywordRecognizer GlobalCommand;
+        public static List<string> CommandLogs;
+
+        public static List<CommandInfo> AllCommands = new List<CommandInfo>();
 
         public static SpeakingMicrophone SM;
 
         public static Effects ModuleEffects;
 
-        public static Action<bool> StarterRecognised;
-        public static Action CommandEnded;
+        public static Action<CommandInfo.CommandType> StarterRecognised;
+        public static Action<CommandInfo.CommandType> CommandEnded;
 
         public static Player[] FriendsInRoom;
 
@@ -71,12 +74,11 @@ namespace VoiceControls.Tools
 
     public class SpeakingMicrophone
     {
-        public enum SpeakingType
+        public enum SpecialColorType
         {
-            Spotify,
-            Regular,
             PlayerColor,
-            CustomHexColor
+            CustomHexColor,
+            None
         }
 
         public GameObject MicrophoneObject;
@@ -99,18 +101,30 @@ namespace VoiceControls.Tools
             get => SpeakingDotObject.GetComponent<RawImage>().material.color;
             set { SpeakingDotObject.GetComponent<RawImage>().material.color = value; }
         }
+        public Color MircrophoneColor
+        {
+            get => MicrophoneObject.GetComponent<RawImage>().material.color;
+            set { MicrophoneObject.GetComponent<RawImage>().material.color = value; }
+        }
 
         public AudioClip MicrophoneOn;
         public AudioClip MicrophoneOff;
+
+        public AudioClip SpotifyOn;
+        public AudioClip SpotifyOff;
+
+        public AudioClip GlobalOn;
+        public AudioClip GlobalOff;
 
         public bool UsePlayersColorForMicrophoneDot;
         public bool UseCustomColor;
 
         public Color HexColor;
 
-        public SpeakingType UserSpeakingType;
-    }
+        public CommandInfo.CommandType UserSpeakingType;
 
+        public SpecialColorType SpeakingType;
+    }
     public class Effects
     {
         public AudioClip PlayerPingAudio;
