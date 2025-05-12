@@ -294,7 +294,7 @@ namespace VoiceControls.Main
             {
                 CommandActivationWord = "ping",
                 CommandDescription = "pinging system for your GT Friends",
-                CommandAction = () => StartCoroutine(Modules.PingPlayers(false)),
+                CommandAction = () => StartCoroutine(Modules.PingPlayers(true)),
                 TypeOfCommand = CommandInfo.CommandType.Default
             });
 
